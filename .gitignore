@@ -1,0 +1,11 @@
+*.bin
+*.dat
+*.syx
+obj/
+.DS_Store
+syx
+scratch
+alire/
+config/
+bin/
+ali/
