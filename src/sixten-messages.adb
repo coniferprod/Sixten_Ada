@@ -59,21 +59,48 @@ package body Sixten.Messages is
                Payload_Start_Index := (case Kind (Manufacturer) is
                   when Normal => Offset + 1,
                   when Extended => Offset + 3);
+               Ada.Text_IO.Put_Line ("Payload_Start_Index = " & Natural'Image (Payload_Start_Index));
+               Ada.Text_IO.Put_Line ("Payload_End_Index = " & Natural'Image (Payload_End_Index));
 
                for I in Payload_Start_Index .. Payload_End_Index loop
                   Payload.Append (Data (I));
+                  --Ada.Text_IO.Put_Line ("I = " & Integer'Image (I));
                end loop;
             end;
 
-            Message :=
-              (Kind    => Manufacturer_Specific, Manufacturer => Manufacturer,
-               Payload => Payload);
+            Message := (Manufacturer_Specific, Payload, Manufacturer);
       end case;
+      --Ada.Text_IO.Put_Line ("exiting from Parse");
    end Parse;
 
    function Payload_Length (Message : Message_Type) return Natural is
    begin
       return Natural (Message.Payload.Length);
    end Payload_Length;
+
+   procedure Emit (Message : Message_Type; Result : out Byte_Vector) is
+   begin
+      Result.Append (Initiator);
+      case Message.Kind is
+         when Universal =>
+            if Message.Real_Time then
+               Result.Append (16#7E#);
+            else
+               Result.Append (16#7F#);
+            end if;
+            Result.Append (Message.Target);
+            Result.Append (Message.Sub_Status_1);
+            Result.Append (Message.Sub_Status_2);
+         when Manufacturer_Specific =>
+            declare
+               M_Bytes : Byte_Array := Sixten.Manufacturers.To_Bytes (Message.Manufacturer);
+               M_BV : Byte_Vector := Sixten.To_Byte_Vector (M_Bytes);
+            begin
+               Result.Append_Vector (M_BV);
+            end;
+      end case;
+      Result.Append_Vector (Message.Payload);
+      Result.Append (Terminator);
+   end Emit;
 
 end Sixten.Messages;

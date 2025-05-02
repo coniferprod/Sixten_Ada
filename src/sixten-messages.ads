@@ -24,5 +24,6 @@ package Sixten.Messages is
 
    procedure Parse (Data : Byte_Vector; Message : out Message_Type);
    function Payload_Length (Message : Message_Type) return Natural;
+   procedure Emit (Message : Message_Type; Result : out Byte_Vector);
 
 end Sixten.Messages;

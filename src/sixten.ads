@@ -19,6 +19,8 @@ package Sixten is
    package Byte_IO is new Ada.Sequential_IO (Byte);
 
    function To_Byte_Array (V : Byte_Vector) return Byte_Array;
+   function To_Byte_Vector (Data : Byte_Array) return Byte_Vector;
+
    procedure Delete is new Ada.Unchecked_Deallocation
      (Byte_Array, Byte_Array_Access);
 

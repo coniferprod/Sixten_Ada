@@ -12,7 +12,7 @@ package body Sixten is
    function Dec (I : Integer) return Integer is (I - 1)
       with Inline;
 
-   function To_Byte_Array(V : Byte_Vector) return Byte_Array is
+   function To_Byte_Array (V : Byte_Vector) return Byte_Array is
       Temp_Arr: Byte_Array (0 .. Natural (V.Length) - 1);
    begin
       for I in Temp_Arr'Range loop
@@ -20,6 +20,15 @@ package body Sixten is
       end loop;
       return Temp_Arr;
    end To_Byte_Array;
+
+   function To_Byte_Vector (Data : Byte_Array) return Byte_Vector is
+      BV : Byte_Vector;
+   begin
+      for I in Data'Range loop
+         BV.Append (Byte (Data (I)));
+      end loop;
+      return BV;
+   end To_Byte_Vector;
 
    procedure Write_File (Name : String; Contents : Byte_Vector) is
       use Byte_IO;
