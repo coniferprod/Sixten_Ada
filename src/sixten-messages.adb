@@ -1,6 +1,4 @@
 with Ada.Text_IO;
-with Ada.Integer_Text_IO;
-with Ada.Exceptions; use Ada.Exceptions;
 with Sixten.Manufacturers; use Sixten.Manufacturers;
 
 package body Sixten.Messages is
@@ -18,23 +16,25 @@ package body Sixten.Messages is
       Offset              : constant Natural :=
         1; -- where we start looking for manufacturer ID
    begin
-      Ada.Text_IO.Put_Line ("Parse ==> MessageType: ");
-      Ada.Text_IO.Put ("Data.First_Element = ");
-      Ada.Text_IO.Put (Hex (Data.First_Element));
-      Ada.Text_IO.New_Line;
+      --Ada.Text_IO.Put_Line ("Parse ==> MessageType: ");
+      --Ada.Text_IO.Put ("Data.First_Element = ");
+      --Ada.Text_IO.Put (Hex (Data.First_Element));
+      --Ada.Text_IO.New_Line;
 
-      Ada.Text_IO.Put ("Data.Last_Element = ");
-      Ada.Text_IO.Put (Hex (Data.Last_Element));
-      Ada.Text_IO.New_Line;
+      --Ada.Text_IO.Put ("Data.Last_Element = ");
+      --Ada.Text_IO.Put (Hex (Data.Last_Element));
+      --Ada.Text_IO.New_Line;
 
       if Data.First_Element /= Initiator then
          raise Message_Error
-           with "System Exclusive Message must start with initiator F0 (hex)";
+           with "System Exclusive Message must start with initiator "
+               & Hex (Initiator) & " (hex)";
       end if;
 
       if Data.Last_Element /= Terminator then
          raise Message_Error
-           with "System Exclusive Message must end with terminator F7 (hex)";
+           with "System Exclusive Message must end with terminator "
+               & Hex (Terminator) & " (hex)";
       end if;
 
       case Data (Offset) is
@@ -59,8 +59,8 @@ package body Sixten.Messages is
                Payload_Start_Index := (case Kind (Manufacturer) is
                   when Normal => Offset + 1,
                   when Extended => Offset + 3);
-               Ada.Text_IO.Put_Line ("Payload_Start_Index = " & Natural'Image (Payload_Start_Index));
-               Ada.Text_IO.Put_Line ("Payload_End_Index = " & Natural'Image (Payload_End_Index));
+               --Ada.Text_IO.Put_Line ("Payload_Start_Index = " & Natural'Image (Payload_Start_Index));
+               --Ada.Text_IO.Put_Line ("Payload_End_Index = " & Natural'Image (Payload_End_Index));
 
                for I in Payload_Start_Index .. Payload_End_Index loop
                   Payload.Append (Data (I));
@@ -93,8 +93,8 @@ package body Sixten.Messages is
             Result.Append (Message.Sub_Status_2);
          when Manufacturer_Specific =>
             declare
-               M_Bytes : Byte_Array := Sixten.Manufacturers.To_Bytes (Message.Manufacturer);
-               M_BV : Byte_Vector := Sixten.To_Byte_Vector (M_Bytes);
+               M_Bytes : constant Byte_Array := Sixten.Manufacturers.To_Bytes (Message.Manufacturer);
+               M_BV : constant Byte_Vector := Sixten.To_Byte_Vector (M_Bytes);
             begin
                Result.Append_Vector (M_BV);
             end;

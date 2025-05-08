@@ -25,7 +25,7 @@ package body Sixten is
       BV : Byte_Vector;
    begin
       for I in Data'Range loop
-         BV.Append (Byte (Data (I)));
+         BV.Append (Data (I));
       end loop;
       return BV;
    end To_Byte_Vector;
@@ -104,7 +104,7 @@ package body Sixten is
       for B of Data loop
          Result := Result & Hex (B) & " ";
       end loop;
-      return To_String (Result);
+      return To_String (Trim (Source => Result, Side => Ada.Strings.Both));
    end Hex_Dump;
 
    type Note_Index is range 0 .. 11;

@@ -23,7 +23,13 @@ package Sixten.Messages is
    Terminator : constant Byte := 16#F7#;
 
    procedure Parse (Data : Byte_Vector; Message : out Message_Type);
+
+   --  Gets the length of the message payload. It is expected that there
+   --  is always some payload, but the return type is Natural because the
+   --  Count_Type defined in Ada.Containers starts from zero (otherwise
+   --  this function could return Positive).
    function Payload_Length (Message : Message_Type) return Natural;
+
    procedure Emit (Message : Message_Type; Result : out Byte_Vector);
 
 end Sixten.Messages;

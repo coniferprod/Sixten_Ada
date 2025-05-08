@@ -9,30 +9,37 @@ package Sixten.Manufacturers is
 
    type Manufacturer_Type is private;
 
-   Development_Identifier : constant Byte := 16#7D#;
-
    -- Parses a byte array into a manufacturer ID. The data must always have
    -- at least three bytes.
    procedure Parse (Data : in Byte_Array; Result : out Manufacturer_Type) with
      Pre => Data'Length >= 3;
 
+   --  Converts the manufacturer into bytes for a MIDI System Exclusive message.
    function To_Bytes (Manufacturer : Manufacturer_Type) return Byte_Array;
 
-   function Manufacturer (B : Byte) return Manufacturer_Type;  -- normal
+   --  Makes a normal manufacturer from one byte.
+   function Manufacturer (B : Byte) return Manufacturer_Type;
+
+   --  Makes an extended manufacturer from three bytes.
    function Manufacturer
      (B1 : Byte; B2 : Byte; B3 : Byte) return Manufacturer_Type; -- extended
 
+   --  Gets the name of the manufacturer.
    function Name (Manufacturer : Manufacturer_Type) return String;
+
+   --  Gets the kind of the manufacturer.
    function Kind (Manufacturer : Manufacturer_Type) return Manufacturer_Kind;
 
-   Yamaha : constant Manufacturer_Type;
-   Kawai              : constant Manufacturer_Type;
-   Native_Instruments : constant Manufacturer_Type;
+   --  Development identifier
    Development        : constant Manufacturer_Type;
 
-   Manufacturer_Error : exception;
+   --  Some ready-made manufacturers for convenience.
+   Kawai              : constant Manufacturer_Type;
+   Native_Instruments : constant Manufacturer_Type;
+   Roland             : constant Manufacturer_Type;
+   Yamaha : constant Manufacturer_Type;
 
-   function Make_Key (Manufacturer : Manufacturer_Type) return String;
+   Manufacturer_Error : exception;
 
 private
    -- Use a variant record to describe the manufacturer
@@ -48,10 +55,11 @@ private
       end case;
    end record;
 
-   Development        : constant Manufacturer_Type := (Normal, Development_Identifier);
+   Development        : constant Manufacturer_Type := (Normal, 16#7D#);
 
    Kawai              : constant Manufacturer_Type := (Normal, 16#40#);
    Native_Instruments : constant Manufacturer_Type := (Extended, 16#21#, 16#09#);
+   Roland             : constant Manufacturer_Type := (Normal, 16#41#);
    Yamaha             : constant Manufacturer_Type := (Normal, 16#43#);
 
 end Sixten.Manufacturers;

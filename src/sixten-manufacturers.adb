@@ -51,12 +51,12 @@ package body Sixten.Manufacturers is
       return (Extended, Identifier_1 => B2, Identifier_2 => B3);
    end Manufacturer;
 
+   --  Makes a key to the hash map of manufacturers from the bytes.
    function Make_Key (Manufacturer : Manufacturer_Type) return String is
-      --Bytes : constant Byte_Array := To_Bytes (Manufacturer);
    begin
       case Manufacturer.Kind is
          when Normal => return Hex (Manufacturer.Identifier);
-         when Extended => 
+         when Extended =>
             return Hex (0) & Hex (Manufacturer.Identifier_1) & Hex (Manufacturer.Identifier_2);
       end case;
    end Make_Key;
@@ -69,11 +69,10 @@ package body Sixten.Manufacturers is
       M   : Manufacturer_Maps.Map;
       Key : constant String := Make_Key (Manufacturer);
    begin
-      --Ada.Text_IO.Put_Line ("Manufacturer map key = " & Key);
-
       M.Include ("18", "E-mu");
 
       M.Include ("00206B", "Arturia");
+      M.Include ("002109", "Native Instruments");
 
       M.Include ("40", "Kawai Musical Instruments MFG. CO. Ltd");
       M.Include ("41", "Roland Corporation");
