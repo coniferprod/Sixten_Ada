@@ -5,23 +5,13 @@ package body Sixten.Manufacturers is
 
    procedure Parse (Data : in Byte_Array; Result : out Manufacturer_Type) is
    begin
-      --Ada.Text_IO.Put ("Parse ==> Manufacturer_Type: ");
-      --Ada.Text_IO.Put ("Data.First_Element = ");
-      --Ada.Text_IO.Put (Hex (Data.First_Element));
-
-      --Ada.Text_IO.Put (" Data.Last_Element = ");
-      --Ada.Text_IO.Put (Hex (Data.Last_Element));
-      --Ada.Text_IO.New_Line;
-
-      if Data (0) = 0 then
-         Result := (Extended, Identifier_1 => Data (1), Identifier_2 => Data (2));
+      if Data (1) = 0 then
+         Result := (Extended, Identifier_1 => Data (2), Identifier_2 => Data (3));
       else
-         Result := (Normal, Identifier => Data (0));
+         Result := (Normal, Identifier => Data (1));
       end if;
    end Parse;
 
-   -- Converts the manufacturer ID to a byte array for inclusion in a
-   -- manufacturer-specific MIDI System Exclusive message.
    function To_Bytes (Manufacturer : Manufacturer_Type) return Byte_Array is
    begin
       case Manufacturer.Kind is

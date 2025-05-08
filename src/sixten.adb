@@ -1,6 +1,5 @@
 with Ada.Streams.Stream_IO;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Directories; use Ada.Directories;
 
 package body Sixten is
 
@@ -49,7 +48,7 @@ package body Sixten is
 
       Input_File   : SIO.File_Type;
       Input_Stream : SIO.Stream_Access;
-      Index        : File_Size := 0;
+      Index        : Natural := Contents'First;
       B            : Byte;
    begin
       SIO.Open (Input_File, SIO.In_File, Name);
@@ -57,7 +56,7 @@ package body Sixten is
       Input_Stream := SIO.Stream (Input_File);
       while not SIO.End_Of_File (Input_File) loop
          Byte'Read (Input_Stream, B);
-         Contents (Integer (Index)) := B;
+         Contents (Index) := B;
          Index            := Index + 1;
       end loop;
 

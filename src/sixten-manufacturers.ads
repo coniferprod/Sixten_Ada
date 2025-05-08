@@ -10,11 +10,12 @@ package Sixten.Manufacturers is
    type Manufacturer_Type is private;
 
    -- Parses a byte array into a manufacturer ID. The data must always have
-   -- at least three bytes.
+   -- at least three bytes, though all may not be used.
    procedure Parse (Data : in Byte_Array; Result : out Manufacturer_Type) with
      Pre => Data'Length >= 3;
 
-   --  Converts the manufacturer into bytes for a MIDI System Exclusive message.
+   -- Converts the manufacturer ID to a byte array for inclusion in a
+   -- manufacturer-specific MIDI System Exclusive message.
    function To_Bytes (Manufacturer : Manufacturer_Type) return Byte_Array;
 
    --  Makes a normal manufacturer from one byte.
