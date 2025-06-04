@@ -5,23 +5,13 @@ package body Sixten.Manufacturers is
 
    procedure Parse (Data : in Byte_Array; Result : out Manufacturer_Type) is
    begin
-      --Ada.Text_IO.Put ("Parse ==> Manufacturer_Type: ");
-      --Ada.Text_IO.Put ("Data.First_Element = ");
-      --Ada.Text_IO.Put (Hex (Data.First_Element));
-
-      --Ada.Text_IO.Put (" Data.Last_Element = ");
-      --Ada.Text_IO.Put (Hex (Data.Last_Element));
-      --Ada.Text_IO.New_Line;
-
-      if Data (0) = 0 then
-         Result := (Extended, Identifier_1 => Data (1), Identifier_2 => Data (2));
+      if Data (1) = 0 then
+         Result := (Extended, Identifier_1 => Data (2), Identifier_2 => Data (3));
       else
-         Result := (Normal, Identifier => Data (0));
+         Result := (Normal, Identifier => Data (1));
       end if;
    end Parse;
 
-   -- Converts the manufacturer ID to a byte array for inclusion in a
-   -- manufacturer-specific MIDI System Exclusive message.
    function To_Bytes (Manufacturer : Manufacturer_Type) return Byte_Array is
    begin
       case Manufacturer.Kind is
@@ -51,12 +41,12 @@ package body Sixten.Manufacturers is
       return (Extended, Identifier_1 => B2, Identifier_2 => B3);
    end Manufacturer;
 
+   --  Makes a key to the hash map of manufacturers from the bytes.
    function Make_Key (Manufacturer : Manufacturer_Type) return String is
-      --Bytes : constant Byte_Array := To_Bytes (Manufacturer);
    begin
       case Manufacturer.Kind is
          when Normal => return Hex (Manufacturer.Identifier);
-         when Extended => 
+         when Extended =>
             return Hex (0) & Hex (Manufacturer.Identifier_1) & Hex (Manufacturer.Identifier_2);
       end case;
    end Make_Key;
@@ -69,11 +59,10 @@ package body Sixten.Manufacturers is
       M   : Manufacturer_Maps.Map;
       Key : constant String := Make_Key (Manufacturer);
    begin
-      --Ada.Text_IO.Put_Line ("Manufacturer map key = " & Key);
-
       M.Include ("18", "E-mu");
 
       M.Include ("00206B", "Arturia");
+      M.Include ("002109", "Native Instruments");
 
       M.Include ("40", "Kawai Musical Instruments MFG. CO. Ltd");
       M.Include ("41", "Roland Corporation");

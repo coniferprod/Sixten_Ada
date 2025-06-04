@@ -1,81 +1,86 @@
 with Ada.Text_IO;
 with Ada.Integer_Text_IO;
-with Ada.Exceptions; use Ada.Exceptions;
 with Sixten.Manufacturers; use Sixten.Manufacturers;
 
 package body Sixten.Messages is
+   procedure Put_Labeled_Number (Message : in String; Value: in Integer) is
+   begin
+      Ada.Text_IO.Put (Message);
+      Ada.Integer_Text_IO.Put (Value, Width => 1);
+      Ada.Text_IO.New_Line;
+   end Put_Labeled_Number;
 
    Real_Time_Identifier     : constant Byte := 16#7F#;
    Non_Real_Time_Identifier : constant Byte := 16#7E#;
 
-   procedure Parse (Data : Byte_Vector; Message : out Message_Type) is
-      Manufacturer        : Manufacturer_Type;
-      Payload_Start_Index : Natural          :=
-        1;  -- the most common index for payload start (manufacturer-specific, standard)
-      Payload_End_Index   : constant Natural :=
-        Data.Last_Index - 1;  -- last byte before SysEx terminator
-      Payload             : Byte_Vector;
-      Offset              : constant Natural :=
-        1; -- where we start looking for manufacturer ID
+   procedure Parse (Data : Byte_Array; Message : out Message_Type) is
+      -- The most common index for payload start (manufacturer-specific, standard)
+      Payload_Start_Index : Natural := 2;
+
+      -- The last byte before the System Exclusive terminator
+      Payload_End_Index   : constant Natural := Data'Length - 1;
+
+      --  Initialize offset to where we start looking for manufacturer ID
+      Offset : Natural := Payload_Start_Index;
+
    begin
-      Ada.Text_IO.Put_Line ("Parse ==> MessageType: ");
-      Ada.Text_IO.Put ("Data.First_Element = ");
-      Ada.Text_IO.Put (Hex (Data.First_Element));
-      Ada.Text_IO.New_Line;
-
-      Ada.Text_IO.Put ("Data.Last_Element = ");
-      Ada.Text_IO.Put (Hex (Data.Last_Element));
-      Ada.Text_IO.New_Line;
-
-      if Data.First_Element /= Initiator then
+      if Data (1) /= Initiator then
          raise Message_Error
-           with "System Exclusive Message must start with initiator F0 (hex)";
+           with "System Exclusive Message must start with initiator "
+               & Hex (Initiator) & " (hex)";
       end if;
 
-      if Data.Last_Element /= Terminator then
+      if Data (Data'Length) /= Terminator then
          raise Message_Error
-           with "System Exclusive Message must end with terminator F7 (hex)";
+           with "System Exclusive Message must end with terminator "
+               & Hex (Terminator) & " (hex)";
       end if;
 
       case Data (Offset) is
          when Real_Time_Identifier | Non_Real_Time_Identifier =>
             Payload_Start_Index := Offset + 4;
-            for I in Payload_Start_Index .. Payload_End_Index loop
-               Payload.Append (Data (I));
-            end loop;
-
-            Message :=
-              (Kind      => Universal,
-               Real_Time => (Data (Offset) = Real_Time_Identifier),
-               Target    => Data (Offset + 1), Sub_Status_1 => Data (Offset + 2),
-               Sub_Status_2      => Data (Offset + 3), Payload => Payload);
+            declare
+               Payload_Size : Natural := Payload_End_Index - Offset;
+               Payload : Byte_Array (1 .. Payload_Size);
+            begin
+               Payload := Data (Payload_Start_Index .. Payload_End_Index);
+               Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
+               Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
+               Put_Labeled_Number ("Payload_Size = " , Payload_Size);
+               Message :=
+                  (Kind      => Universal, Payload_Size => Payload'Length,
+                   Real_Time => (Data (Offset) = Real_Time_Identifier),
+                   Target    => Data (Offset + 1), Sub_Status_1 => Data (Offset + 2),
+                   Sub_Status_2      => Data (Offset + 3), Payload => Payload);
+            end;
          when others =>
             declare
-               Manufacturer_Data : Byte_Array (0 .. 2);
+               Payload_Size : Natural := Payload_End_Index - Offset;
+               Manufacturer_Data : Byte_Array (1 .. 3);
+               Payload : Byte_Array (1 .. Payload_Size);
+               Manufacturer : Manufacturer_Type;
             begin
-               Manufacturer_Data := (Data (Offset), Data (Offset + 1), Data (Offset + 2));
+               Manufacturer_Data := Data (Offset .. Offset + 2);
                Parse (Manufacturer_Data, Manufacturer);
 
                Payload_Start_Index := (case Kind (Manufacturer) is
                   when Normal => Offset + 1,
                   when Extended => Offset + 3);
-               Ada.Text_IO.Put_Line ("Payload_Start_Index = " & Natural'Image (Payload_Start_Index));
-               Ada.Text_IO.Put_Line ("Payload_End_Index = " & Natural'Image (Payload_End_Index));
 
-               for I in Payload_Start_Index .. Payload_End_Index loop
-                  Payload.Append (Data (I));
-                  --Ada.Text_IO.Put_Line ("I = " & Integer'Image (I));
-               end loop;
+               Payload := Data (Payload_Start_Index .. Payload_End_Index);
+               Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
+               Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
+               Put_Labeled_Number ("Payload_Size = " , Payload_Size);
+
+               Message := (Kind => Manufacturer_Specific, Payload_Size => Payload'Length,
+                  Payload => Payload, Manufacturer => Manufacturer);
             end;
-
-            Message := (Manufacturer_Specific, Payload, Manufacturer);
       end case;
-      --Ada.Text_IO.Put_Line ("exiting from Parse");
    end Parse;
 
    function Payload_Length (Message : Message_Type) return Natural is
    begin
-      return Natural (Message.Payload.Length);
+      return Natural (Message.Payload'Length);
    end Payload_Length;
 
    procedure Emit (Message : Message_Type; Result : out Byte_Vector) is
@@ -84,22 +89,22 @@ package body Sixten.Messages is
       case Message.Kind is
          when Universal =>
             if Message.Real_Time then
-               Result.Append (16#7E#);
+               Result.Append (Real_Time_Identifier);
             else
-               Result.Append (16#7F#);
+               Result.Append (Non_Real_Time_Identifier);
             end if;
             Result.Append (Message.Target);
             Result.Append (Message.Sub_Status_1);
             Result.Append (Message.Sub_Status_2);
          when Manufacturer_Specific =>
             declare
-               M_Bytes : Byte_Array := Sixten.Manufacturers.To_Bytes (Message.Manufacturer);
-               M_BV : Byte_Vector := Sixten.To_Byte_Vector (M_Bytes);
+               M_Bytes : constant Byte_Array := Sixten.Manufacturers.To_Bytes (Message.Manufacturer);
+               M_BV : constant Byte_Vector := Sixten.To_Byte_Vector (M_Bytes);
             begin
                Result.Append_Vector (M_BV);
             end;
       end case;
-      Result.Append_Vector (Message.Payload);
+      Result.Append_Vector (To_Byte_Vector (Message.Payload));
       Result.Append (Terminator);
    end Emit;
 

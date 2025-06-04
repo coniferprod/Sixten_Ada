@@ -1,6 +1,5 @@
 with Ada.Streams.Stream_IO;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Directories; use Ada.Directories;
 
 package body Sixten is
 
@@ -25,7 +24,7 @@ package body Sixten is
       BV : Byte_Vector;
    begin
       for I in Data'Range loop
-         BV.Append (Byte (Data (I)));
+         BV.Append (Data (I));
       end loop;
       return BV;
    end To_Byte_Vector;
@@ -49,7 +48,7 @@ package body Sixten is
 
       Input_File   : SIO.File_Type;
       Input_Stream : SIO.Stream_Access;
-      Index        : File_Size := 0;
+      Index        : Natural := Contents'First;
       B            : Byte;
    begin
       SIO.Open (Input_File, SIO.In_File, Name);
@@ -57,7 +56,7 @@ package body Sixten is
       Input_Stream := SIO.Stream (Input_File);
       while not SIO.End_Of_File (Input_File) loop
          Byte'Read (Input_Stream, B);
-         Contents (Integer (Index)) := B;
+         Contents (Index) := B;
          Index            := Index + 1;
       end loop;
 
@@ -104,7 +103,7 @@ package body Sixten is
       for B of Data loop
          Result := Result & Hex (B) & " ";
       end loop;
-      return To_String (Result);
+      return To_String (Trim (Source => Result, Side => Ada.Strings.Both));
    end Hex_Dump;
 
    type Note_Index is range 0 .. 11;
