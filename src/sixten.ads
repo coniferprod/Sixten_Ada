@@ -32,7 +32,7 @@ package Sixten is
    procedure Read_File (Name : String; Contents : out Byte_Array);
 
    -- MIDI note number (7 bits)
-   type MIDI_Note_Type is range 0 .. 127;
+   subtype MIDI_Note_Type is Integer range 0 .. 127;
 
    -- MIDI channel number
    type MIDI_Channel_Type is range 1 .. 16;
