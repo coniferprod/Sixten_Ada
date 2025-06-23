@@ -20,9 +20,8 @@ package body Sixten.Messages is
       -- The last byte before the System Exclusive terminator
       Payload_End_Index   : constant Natural := Data'Length - 1;
 
-      --  Initialize offset to where we start looking for manufacturer ID
-      Offset : Natural := Payload_Start_Index;
-
+      --  Offset where we start looking for manufacturer ID
+      Offset : Natural;
    begin
       if Data (1) /= Initiator then
          raise Message_Error
@@ -36,6 +35,7 @@ package body Sixten.Messages is
                & Hex (Terminator) & " (hex)";
       end if;
 
+      Offset := Payload_Start_Index;
       case Data (Offset) is
          when Real_Time_Identifier | Non_Real_Time_Identifier =>
             Payload_Start_Index := Offset + 4;
@@ -44,9 +44,11 @@ package body Sixten.Messages is
                Payload : Byte_Array (1 .. Payload_Size);
             begin
                Payload := Data (Payload_Start_Index .. Payload_End_Index);
-               Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
-               Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
-               Put_Labeled_Number ("Payload_Size = " , Payload_Size);
+               if Debugging then
+                  Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
+                  Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
+                  Put_Labeled_Number ("Payload_Size = " , Payload_Size);
+               end if;
                Message :=
                   (Kind      => Universal, Payload_Size => Payload'Length,
                    Real_Time => (Data (Offset) = Real_Time_Identifier),
@@ -68,9 +70,11 @@ package body Sixten.Messages is
                   when Extended => Offset + 3);
 
                Payload := Data (Payload_Start_Index .. Payload_End_Index);
-               Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
-               Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
-               Put_Labeled_Number ("Payload_Size = " , Payload_Size);
+               if Debugging then
+                  Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
+                  Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
+                  Put_Labeled_Number ("Payload_Size = " , Payload_Size);
+               end if;
 
                Message := (Kind => Manufacturer_Specific, Payload_Size => Payload'Length,
                   Payload => Payload, Manufacturer => Manufacturer);
