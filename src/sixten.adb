@@ -3,12 +3,14 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 package body Sixten is
 
-   -- Helper function to increment an integer value by one.
-   function Inc (I : Integer) return Integer is (I + 1)
+   package Byte_IO is new Ada.Sequential_IO (Byte);
+
+   -- Helper function to increment an integer value.
+   function Inc (I : in Integer; Amount : in Integer := 1) return Integer is (I + Amount)
       with Inline;
 
-   -- Helper function to decrement an integer value by one.
-   function Dec (I : Integer) return Integer is (I - 1)
+   -- Helper function to decrement an integer value.
+   function Dec (I : in Integer; Amount : in Integer := 1) return Integer is (I - Amount)
       with Inline;
 
    function To_Byte_Array (V : Byte_Vector) return Byte_Array is
@@ -64,25 +66,88 @@ package body Sixten is
    end Read_File;
 
    function Read_All_Bytes (File_Name : String) return Byte_Vector is
-      package SIO renames Ada.Streams.Stream_IO;
-
-      Buffer : Byte_Vector;
-      Input_File   : SIO.File_Type;
-      Input_Stream : SIO.Stream_Access;
-      B            : Byte;
+      Buffer       : Byte_Vector;
+      Input_File   : Byte_IO.File_Type;
+      Value        : Byte;
    begin
-      SIO.Open (Input_File, SIO.In_File, File_Name);
+      Byte_IO.Open (Input_File, Byte_IO.In_File, File_Name);
 
-      Input_Stream := SIO.Stream (Input_File);
-      while not SIO.End_Of_File (Input_File) loop
-         Byte'Read (Input_Stream, B);
-         Buffer.Append (B);
+      while not Byte_IO.End_Of_File (Input_File) loop
+         Byte_IO.Read (Input_File, Value);
+         Buffer.Append (Value);
       end loop;
 
-      SIO.Close (Input_File);
+      Byte_IO.Close (Input_File);
 
       return Buffer;
    end Read_All_Bytes;
+
+   --  Gets the high nybble from a byte.
+   function High_Nybble (Value : in Byte) return Byte is
+      Temp : Byte;
+   begin
+      Temp := Value and 16#F0#;
+      Temp := Shift_Right (Temp, 4);
+      return Temp;
+   end High_Nybble;
+
+   --  Gets the low nybble from a byte.
+   function Low_Nybble (Value : in Byte) return Byte is
+   begin
+      return Value and 16#0F#;
+   end Low_Nybble;
+
+   function Denybblify (Buffer : in Byte_Vector; Order : in Nybble_Order_Type := High_First) return Byte_Vector 
+      is
+
+      function Byte_From_Nybbles (High : Byte; Low : Byte) return Byte is
+         Temp : Byte;
+      begin
+         Temp := Shift_Left (High, 4);
+         return Temp or Low;
+      end Byte_From_Nybbles;
+
+      Result : Byte_Vector;
+      Value, High, Low : Byte;
+      Index : Integer := 0;
+      Offset : Integer := 0;
+      Count : constant Ada.Containers.Count_Type := Buffer.Length / 2;
+   begin
+      while Index < Integer (Count) loop
+         High := Buffer.Element (Offset);
+         Low := Buffer.Element (Offset + 1);
+
+         if Order = High_First then
+            Value := Byte_From_Nybbles (High, Low);
+         else
+            Value := Byte_From_Nybbles (Low, High);
+         end if;
+
+         Result.Append (Value);
+         Index := Inc (Index);
+         Offset := Inc (Offset, 2);
+      end loop;
+
+      return Result;
+   end Denybblify;
+
+   function Nybblify (Buffer : in Byte_Vector; Order : in Nybble_Order_Type := High_First) return Byte_Vector is
+      Result : Byte_Vector;
+      H, L : Byte;
+   begin
+      for Value of Buffer loop
+         H := High_Nybble (Value);
+         L := Low_Nybble (Value);
+         if Order = High_First then
+            Result.Append (H);
+            Result.Append (L);
+         else
+            Result.Append (L);
+            Result.Append (H);
+         end if;
+      end loop;
+      return Result;
+   end Nybblify;
 
    -- Converts a Byte value into its hexadecimal two-digit string representation.
    -- Influenced by: https://ada.tips/using-adasequential_io-to-create-simple-hexdump-utility.html

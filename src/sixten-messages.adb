@@ -23,13 +23,16 @@ package body Sixten.Messages is
       --  Offset where we start looking for manufacturer ID
       Offset : Natural;
    begin
-      if Data (1) /= Initiator then
+      Put_Labeled_Number ("Data'First = ", Data'First);
+      Put_Labeled_Number ("Data'Last = ", Data'Last);
+
+      if Data (0) /= Initiator then
          raise Message_Error
            with "System Exclusive Message must start with initiator "
                & Hex (Initiator) & " (hex)";
       end if;
 
-      if Data (Data'Length) /= Terminator then
+      if Data (Data'Length - 1) /= Terminator then
          raise Message_Error
            with "System Exclusive Message must end with terminator "
                & Hex (Terminator) & " (hex)";
@@ -59,7 +62,7 @@ package body Sixten.Messages is
             declare
                Payload_Size : Natural := Payload_End_Index - Offset;
                Manufacturer_Data : Byte_Array (1 .. 3);
-               Payload : Byte_Array (1 .. Payload_Size);
+               Payload : Byte_Array (0 .. Payload_Size - 1);
                Manufacturer : Manufacturer_Type;
             begin
                Manufacturer_Data := Data (Offset .. Offset + 2);
@@ -69,12 +72,12 @@ package body Sixten.Messages is
                   when Normal => Offset + 1,
                   when Extended => Offset + 3);
 
-               Payload := Data (Payload_Start_Index .. Payload_End_Index);
                if Debugging then
                   Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
                   Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
                   Put_Labeled_Number ("Payload_Size = " , Payload_Size);
                end if;
+               Payload := Data (Payload_Start_Index .. Payload_End_Index);
 
                Message := (Kind => Manufacturer_Specific, Payload_Size => Payload'Length,
                   Payload => Payload, Manufacturer => Manufacturer);

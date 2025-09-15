@@ -1,6 +1,7 @@
 with Interfaces;
 with Ada.Containers;
 with Ada.Containers.Vectors;
+use type Ada.Containers.Count_Type;
 with Ada.Sequential_IO;
 with Ada.Unchecked_Deallocation;
 
@@ -16,7 +17,6 @@ package Sixten is
    package Byte_Vectors is new Ada.Containers.Vectors
      (Index_Type => Natural, Element_Type => Byte);
    subtype Byte_Vector is Sixten.Byte_Vectors.Vector;
-   package Byte_IO is new Ada.Sequential_IO (Byte);
 
    function To_Byte_Array (V : Byte_Vector) return Byte_Array;
    function To_Byte_Vector (Data : Byte_Array) return Byte_Vector;
@@ -28,6 +28,12 @@ package Sixten is
    function Hex (B : Byte) return String;
    function Hex_Dump (Data : Byte_Vector) return String;
 
+   type Nybble_Order_Type is (High_First, Low_First);
+   function Denybblify (Buffer : in Byte_Vector; 
+                        Order : in Nybble_Order_Type := High_First) return Byte_Vector
+      with Pre => Buffer.Length mod 2 = 0;
+   function Nybblify (Buffer : in Byte_Vector; Order : in Nybble_Order_Type := High_First) return Byte_Vector;
+   
    procedure Write_File (Name : String; Contents : Byte_Vector);
    procedure Read_File (Name : String; Contents : out Byte_Array);
 
@@ -42,6 +48,6 @@ package Sixten is
 
    function Name (Note_Number : in MIDI_Note_Type) return Note_Name;
 
-   Debugging : Boolean := False;
+   Debugging : Boolean := True;
 
 end Sixten;
