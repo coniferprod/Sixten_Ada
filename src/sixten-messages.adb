@@ -46,11 +46,25 @@ package body Sixten.Messages is
       case Data (Offset) is
          when Real_Time_Identifier | Non_Real_Time_Identifier =>
             Payload_Start_Index := 5;
-            Payload_Size := Payload_End_Index - Payload_Start_Index;
+            if Payload_Start_Index >= Payload_End_Index then --  no payload
+               Payload_Size := 0;
+            else
+               Payload_Size := Payload_End_Index - Payload_Start_Index;
+            end if;
+            if Debugging then
+               Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
+               Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
+               Put_Labeled_Number ("Payload_Size = ", Payload_Size);
+            end if;
             declare
-               Payload : Byte_Array (1 .. Payload_Size);
+               Payload : Byte_Array (1 .. Payload_Size);  --  could be a null range
+               Payload_Offset : Natural;  -- payload starts here in the message data
             begin
-               Payload := Data (Payload_Start_Index .. Payload_End_Index);
+               Payload_Offset := Payload_Start_Index;
+               for I in Payload'Range loop   --  does nothing if null range
+                  Payload (I) := Data (I + Payload_Offset);
+               end loop;
+
                Message :=
                   (Kind      => Universal, 
                    Payload_Size => Payload'Length,
@@ -63,6 +77,11 @@ package body Sixten.Messages is
          when others =>
             Payload_Start_Index := 2;
             Payload_Size := Payload_End_Index - Payload_Start_Index;
+            if Debugging then
+               Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
+               Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
+               Put_Labeled_Number ("Payload_Size = ", Payload_Size);
+            end if;
             declare
                --  The message is at least four bytes, so there will be 
                --  three bytes of tentative manufacturer data.
