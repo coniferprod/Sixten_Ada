@@ -46,10 +46,10 @@ package body Sixten.Messages is
       case Data (Offset) is
          when Real_Time_Identifier | Non_Real_Time_Identifier =>
             Payload_Start_Index := 5;
-            if Payload_Start_Index >= Payload_End_Index then --  no payload
+            if Payload_Start_Index >= Payload_End_Index then  --  no payload
                Payload_Size := 0;
             else
-               Payload_Size := Payload_End_Index - Payload_Start_Index;
+               Payload_Size := Payload_End_Index - Payload_Start_Index + 1;
             end if;
             if Debugging then
                Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
@@ -58,11 +58,9 @@ package body Sixten.Messages is
             end if;
             declare
                Payload : Byte_Array (1 .. Payload_Size);  --  could be a null range
-               Payload_Offset : Natural;  -- payload starts here in the message data
             begin
-               Payload_Offset := Payload_Start_Index;
                for I in Payload'Range loop   --  does nothing if null range
-                  Payload (I) := Data (I + Payload_Offset);
+                  Payload (I) := Data (I + Payload_Start_Index - 1);
                end loop;
 
                Message :=
@@ -76,7 +74,7 @@ package body Sixten.Messages is
             end;
          when others =>
             Payload_Start_Index := 2;
-            Payload_Size := Payload_End_Index - Payload_Start_Index;
+            Payload_Size := Payload_End_Index - Payload_Start_Index + 1;
             if Debugging then
                Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
                Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
@@ -101,7 +99,7 @@ package body Sixten.Messages is
                   when Extended => 4);
 
                for I in Payload'Range loop
-                  Payload (I) := Data (I + Payload_Offset);
+                  Payload (I) := Data (I + Payload_Offset - 1);
                end loop;
 
                Message := (Kind => Manufacturer_Specific, 

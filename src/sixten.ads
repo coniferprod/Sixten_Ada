@@ -48,6 +48,6 @@ package Sixten is
 
    function Name (Note_Number : in MIDI_Note_Type) return Note_Name;
 
-   Debugging : Boolean := True;
+   Debugging : Boolean := False;
 
 end Sixten;
