@@ -14,73 +14,81 @@ package body Sixten.Messages is
    Non_Real_Time_Identifier : constant Byte := 16#7E#;
 
    procedure Parse (Data : Byte_Array; Message : out Message_Type) is
-      -- The most common index for payload start (manufacturer-specific, standard)
-      Payload_Start_Index : Natural := 2;
-
-      -- The last byte before the System Exclusive terminator
-      Payload_End_Index   : constant Natural := Data'Length - 1;
-
       --  Offset where we start looking for manufacturer ID
       Offset : Natural;
+
+      --  Shortest possible message is "F0 40 xx F7" (standard manufacturer,
+      --  one byte of payload)
+
+      Payload_Start_Index : Natural;
+      Payload_End_Index : constant Natural := Data'Last - 1;
+
+      Payload_Size : Natural;
    begin
-      Put_Labeled_Number ("Data'First = ", Data'First);
-      Put_Labeled_Number ("Data'Last = ", Data'Last);
+      declare
+         First_Byte : constant Byte := Data (Data'First);
+         Last_Byte  : constant Byte := Data (Data'Last);
+      begin
+         if First_Byte /= Initiator then
+            raise Message_Error
+            with "System Exclusive Message must start with initiator "
+                  & Hex (Initiator) & " (hex)";
+         end if;
 
-      if Data (0) /= Initiator then
-         raise Message_Error
-           with "System Exclusive Message must start with initiator "
-               & Hex (Initiator) & " (hex)";
-      end if;
+         if Last_Byte /= Terminator then
+            raise Message_Error
+            with "System Exclusive Message must end with terminator "
+                  & Hex (Terminator) & " (hex)";
+         end if;
+      end;
 
-      if Data (Data'Length - 1) /= Terminator then
-         raise Message_Error
-           with "System Exclusive Message must end with terminator "
-               & Hex (Terminator) & " (hex)";
-      end if;
-
-      Offset := Payload_Start_Index;
+      Offset := 1;
       case Data (Offset) is
          when Real_Time_Identifier | Non_Real_Time_Identifier =>
-            Payload_Start_Index := Offset + 4;
+            Payload_Start_Index := 5;
+            Payload_Size := Payload_End_Index - Payload_Start_Index;
             declare
-               Payload_Size : Natural := Payload_End_Index - Offset;
                Payload : Byte_Array (1 .. Payload_Size);
             begin
                Payload := Data (Payload_Start_Index .. Payload_End_Index);
-               if Debugging then
-                  Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
-                  Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
-                  Put_Labeled_Number ("Payload_Size = " , Payload_Size);
-               end if;
                Message :=
-                  (Kind      => Universal, Payload_Size => Payload'Length,
-                   Real_Time => (Data (Offset) = Real_Time_Identifier),
-                   Target    => Data (Offset + 1), Sub_Status_1 => Data (Offset + 2),
-                   Sub_Status_2      => Data (Offset + 3), Payload => Payload);
+                  (Kind      => Universal, 
+                   Payload_Size => Payload'Length,
+                   Real_Time => (Data (1) = Real_Time_Identifier),
+                   Target    => Data (2), 
+                   Sub_Status_1 => Data (3),
+                   Sub_Status_2 => Data (4), 
+                   Payload => Payload);
             end;
          when others =>
+            Payload_Start_Index := 2;
+            Payload_Size := Payload_End_Index - Payload_Start_Index;
             declare
-               Payload_Size : Natural := Payload_End_Index - Offset;
-               Manufacturer_Data : Byte_Array (1 .. 3);
-               Payload : Byte_Array (0 .. Payload_Size - 1);
+               --  The message is at least four bytes, so there will be 
+               --  three bytes of tentative manufacturer data.
+               Manufacturer_Data : constant Byte_Array (1 .. 3) := Data (1 .. 3);
+
+               Payload_Offset : Natural;  -- payload starts here in the message data
+
+               Payload : Byte_Array (1 .. Payload_Size);
                Manufacturer : Manufacturer_Type;
             begin
-               Manufacturer_Data := Data (Offset .. Offset + 2);
                Parse (Manufacturer_Data, Manufacturer);
 
-               Payload_Start_Index := (case Kind (Manufacturer) is
-                  when Normal => Offset + 1,
-                  when Extended => Offset + 3);
+               --  Standard manufacturer: F0 40 xx F7
+               --  Extended manufacturer: F0 00 20 6B xx F7
+               Payload_Offset := (case Kind (Manufacturer) is
+                  when Normal => 2,
+                  when Extended => 4);
 
-               if Debugging then
-                  Put_Labeled_Number ("Payload_Start_Index = ", Payload_Start_Index);
-                  Put_Labeled_Number ("Payload_End_Index = ", Payload_End_Index);
-                  Put_Labeled_Number ("Payload_Size = " , Payload_Size);
-               end if;
-               Payload := Data (Payload_Start_Index .. Payload_End_Index);
+               for I in Payload'Range loop
+                  Payload (I) := Data (I + Payload_Offset);
+               end loop;
 
-               Message := (Kind => Manufacturer_Specific, Payload_Size => Payload'Length,
-                  Payload => Payload, Manufacturer => Manufacturer);
+               Message := (Kind => Manufacturer_Specific, 
+                           Payload_Size => Payload'Length,
+                           Payload => Payload, 
+                           Manufacturer => Manufacturer);
             end;
       end case;
    end Parse;
@@ -105,7 +113,7 @@ package body Sixten.Messages is
             Result.Append (Message.Sub_Status_2);
          when Manufacturer_Specific =>
             declare
-               M_Bytes : constant Byte_Array := Sixten.Manufacturers.To_Bytes (Message.Manufacturer);
+               M_Bytes : constant Byte_Array := To_Bytes (Message.Manufacturer);
                M_BV : constant Byte_Vector := Sixten.To_Byte_Vector (M_Bytes);
             begin
                Result.Append_Vector (M_BV);

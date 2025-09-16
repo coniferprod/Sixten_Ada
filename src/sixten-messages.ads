@@ -23,7 +23,6 @@ package Sixten.Messages is
    Initiator  : constant Byte := 16#F0#;
    Terminator : constant Byte := 16#F7#;
 
-   --procedure Parse (Data : Byte_Vector; Message : out Message_Type);
    procedure Parse (Data : Byte_Array; Message : out Message_Type);
 
    --  Gets the length of the message payload. It is expected that there
